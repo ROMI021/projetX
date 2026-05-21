@@ -139,7 +139,13 @@ export function initLiveLogs() {
                 logToConsole(e.origin || 'EVENT', e.msg || '(no message)', e.type || 'info');
                 bumpChart(e.type);
                 if (e.origin === 'ALERT' || e.origin === 'SHIELD') refreshMetrics();
-                if (e.origin === 'AUDIT') document.dispatchEvent(new CustomEvent('bola-audit-log', { detail: e }));
+                if (e.origin === 'AUDIT') {
+                    document.dispatchEvent(new CustomEvent('bola-audit-log', { detail: e }));
+                    // Vérification de la demande d'OTP
+                    if (e.msg && e.msg.includes('[OTP_REQUIRED]')) {
+                        document.dispatchEvent(new CustomEvent('bola-otp-required'));
+                    }
+                }
             } catch (_) {}
         };
     } catch (e) {

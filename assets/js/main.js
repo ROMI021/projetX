@@ -177,6 +177,59 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('bola-score-update', () => {
         recalculateSecurityScore();
     });
+
+    // 5. Bind OTP Modal Logic
+    const otpModal = document.getElementById('otp-modal');
+    const btnCloseOtp = document.getElementById('btn-close-otp');
+    const btnSubmitOtp = document.getElementById('btn-submit-otp');
+    const otpInputField = document.getElementById('otp-input-field');
+
+    document.addEventListener('bola-otp-required', () => {
+        if (otpModal) {
+            otpModal.style.display = 'flex';
+            if (otpInputField) {
+                otpInputField.value = '';
+                otpInputField.focus();
+            }
+        }
+    });
+
+    if (btnCloseOtp && otpModal) {
+        btnCloseOtp.addEventListener('click', () => {
+            otpModal.style.display = 'none';
+        });
+    }
+
+    if (btnSubmitOtp && otpInputField) {
+        btnSubmitOtp.addEventListener('click', async () => {
+            const code = otpInputField.value.trim();
+            if (!code) {
+                showToast('Veuillez entrer le code OTP.');
+                return;
+            }
+            
+            try {
+                btnSubmitOtp.innerText = 'Envoi...';
+                btnSubmitOtp.disabled = true;
+                
+                const res = await fetch(`${window.location.origin}/api/otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                
+                if (!res.ok) throw new Error('Erreur lors de l\'envoi');
+                
+                showToast('OTP envoyé avec succès ! Le navigateur fantôme reprend...');
+                otpModal.style.display = 'none';
+            } catch (err) {
+                showToast('Erreur : ' + err.message);
+            } finally {
+                btnSubmitOtp.innerText = 'Envoyer le Code';
+                btnSubmitOtp.disabled = false;
+            }
+        });
+    }
 });
 
 /**

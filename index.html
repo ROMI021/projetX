@@ -700,6 +700,16 @@
         </main>
     </div>
 
+    <!-- OTP Modal -->
+    <div id="otp-modal" class="custom-alert-overlay" style="display: none; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); z-index: 10000;">
+        <div style="background: var(--bg-card); padding: 30px; border-radius: 8px; border: 1px solid var(--accent-primary); width: 400px; max-width: 90%;">
+            <h3 style="color: var(--accent-warning); margin-top: 0;">Saisie OTP Requise</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">La cible requiert un code de validation à usage unique (OTP). Le scan DAST est en pause (maximum 3 minutes).</p>
+            <input type="text" id="otp-input-field" class="cyber-input" style="width: 100%; text-align: center; font-size: 1.5rem; letter-spacing: 4px; margin-bottom: 20px;" placeholder="Ex: 123456">
+            <button id="btn-submit-otp" class="cyber-btn btn-primary" style="width: 100%; justify-content: center;">Envoyer le Code</button>
+        </div>
+    </div>
+
     <!-- UI Overlay for Alerts -->
     <div class="custom-alert-overlay" id="global-alert-toast">
         <div class="alert-toast-box">
