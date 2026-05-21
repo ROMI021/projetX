@@ -1,30 +1,61 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = 's3cr3t_k3y_for_b0la_sh13ld_t3st1ng_0nly';
 
 // Bases de données simulées
-const users = new Map(); // email -> { id, email, role }
-const orders = new Map(); // id -> { id, userId, items, total }
+const users = new Map(); // id -> { id, email, passwordHash, role, sensitiveData }
+const usersByEmail = new Map(); // email -> id
 
-// Peuplement initial de commandes pour tester
+// Peuplement initial
 const seedData = () => {
-    // Faux IDs complexes
-    orders.set('ord_9f8a7b6c5d4e3f2a1', { id: 'ord_9f8a7b6c5d4e3f2a1', userId: 'user_admin', items: ['Server Rack'], total: 4500 });
-    orders.set('ord_1a2b3c4d5e6f7g8h9', { id: 'ord_1a2b3c4d5e6f7g8h9', userId: 'user_arthur', items: ['Laptop', 'Mouse'], total: 1250 });
+    const adminId = 'usr_admin_' + Date.now();
+    users.set(adminId, {
+        id: adminId,
+        email: 'admin@glotelho.cm',
+        passwordHash: bcrypt.hashSync('SuperSecret123!', 10),
+        role: 'admin',
+        sensitiveData: { creditCard: '****-****-****-1234', address: '123 Admin Ave, Yaoundé' }
+    });
+    usersByEmail.set('admin@glotelho.cm', adminId);
 };
 seedData();
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
+// ==========================================
+// MIDDLEWARES DE SÉCURITÉ INDUSTRIELS
+// ==========================================
 
-// Simulation de latence réseau (100ms - 300ms) pour tester les timeouts du scanner
+// 1. Headers de sécurité (Helmet)
+app.use(helmet());
+app.use(helmet.hidePoweredBy());
+
+// 2. CORS Restrictif (Ouvert pour le test, mais avec headers stricts)
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// 3. Parsing JSON sécurisé (limite de taille)
+app.use(express.json({ limit: '100kb' }));
+
+// 4. Rate Limiting (Anti-Bruteforce)
+const apiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 60, // Limite à 60 requêtes par minute (tolérant pour BOLA-Shield)
+    message: { status: 'error', code: 'ERR_RATE_LIMIT', message: 'Too many requests, please try again later.' }
+});
+app.use('/api/', apiLimiter);
+
+// 5. Simulation de latence réseau réaliste (50ms - 150ms)
 app.use((req, res, next) => {
-    const delay = Math.floor(Math.random() * 200) + 100;
+    const delay = Math.floor(Math.random() * 100) + 50;
     setTimeout(next, delay);
 });
 
@@ -32,11 +63,11 @@ app.use((req, res, next) => {
 // ROUTES
 // ==========================================
 
-// Accueil (pour rassurer l'utilisateur s'il ouvre localhost:3000 dans son navigateur)
+// Accueil
 app.get('/', (req, res) => {
     res.json({
         status: "success",
-        message: "Bienvenue sur l'API Cible (Mock Target). L'API est en ligne et prête à être auditée par BOLA-Shield !",
+        message: "E-Commerce Secure API is online. Highly protected environment.",
         docs: "http://localhost:3000/openapi.json"
     });
 });
@@ -45,62 +76,103 @@ app.get('/', (req, res) => {
 app.get('/openapi.json', (req, res) => {
     res.json({
         openapi: "3.0.0",
-        info: { title: "Robust Mock Target API", version: "2.0.0" },
+        info: { title: "Secure E-Commerce API", version: "3.0.0" },
         paths: {
             "/api/auth/register": { post: { summary: "Inscription utilisateur" } },
             "/api/auth/login": { post: { summary: "Connexion utilisateur" } },
-            "/api/orders/{id}": { get: { summary: "Récupération d'une commande" } }
+            "/api/users/me": { get: { summary: "Mon profil" } },
+            "/api/users/{id}": { get: { summary: "Profil détaillé (Admin/Support only)" } }
         }
     });
 });
 
 // Inscription
-app.post('/api/auth/register', (req, res) => {
-    const { email, password } = req.body;
+app.post('/api/auth/register', async (req, res) => {
+    const { email, password, captchaToken } = req.body;
     
-    // Input validation robuste
-    if (!email || !password) {
-        return res.status(422).json({ status: 'error', code: 'ERR_MISSING_FIELDS', message: 'Email and password are required' });
-    }
-    if (password.length < 6) {
-        return res.status(422).json({ status: 'error', code: 'ERR_WEAK_PASSWORD', message: 'Password must be at least 6 characters long' });
+    // Simulation d'un Anti-Bot robuste (CAPTCHA)
+    if (!captchaToken || captchaToken !== 'valid_human_token') {
+        return res.status(403).json({ 
+            status: 'error', 
+            code: 'ERR_BOT_DETECTED', 
+            message: 'Captcha validation failed. Automated bot activity suspected.' 
+        });
     }
 
-    const userId = 'usr_' + Buffer.from(email).toString('base64').substring(0, 10);
-    const user = { id: userId, email, role: 'customer' };
-    users.set(email, user);
+    // Input validation stricte
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+        return res.status(422).json({ status: 'error', code: 'ERR_MISSING_FIELDS', message: 'Valid email and password are required' });
+    }
+    if (password.length < 8) {
+        return res.status(422).json({ status: 'error', code: 'ERR_WEAK_PASSWORD', message: 'Password must be at least 8 characters long' });
+    }
 
-    // Génération d'un vrai JWT
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    if (usersByEmail.has(email)) {
+        return res.status(409).json({ status: 'error', code: 'ERR_EMAIL_EXISTS', message: 'Email already registered' });
+    }
+
+    const userId = 'usr_' + Buffer.from(email).toString('base64').substring(0, 15) + Math.floor(Math.random() * 1000);
+    const passwordHash = await bcrypt.hash(password, 10);
     
-    res.status(201).json({ status: 'success', token, user });
+    const user = { 
+        id: userId, 
+        email, 
+        passwordHash, 
+        role: 'customer',
+        sensitiveData: { creditCard: 'No card on file', address: 'No address' }
+    };
+    
+    users.set(userId, user);
+    usersByEmail.set(email, userId);
+
+    // JWT (sans données sensibles)
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    
+    // Retourne l'ID et l'email uniquement. AUCUN orderId truqué.
+    res.status(201).json({ status: 'success', token, user: { id: user.id, email: user.email } });
 });
 
 // Connexion
-app.post('/api/auth/login', (req, res) => {
-    const { email, password } = req.body;
+app.post('/api/auth/login', async (req, res) => {
+    const { email, password, captchaToken } = req.body;
+
+    // Simulation d'un Anti-Bot robuste (CAPTCHA)
+    if (!captchaToken || captchaToken !== 'valid_human_token') {
+        return res.status(403).json({ 
+            status: 'error', 
+            code: 'ERR_BOT_DETECTED', 
+            message: 'Captcha validation failed. Automated bot activity suspected.' 
+        });
+    }
 
     if (!email || !password) {
         return res.status(422).json({ status: 'error', code: 'ERR_MISSING_FIELDS', message: 'Email and password are required' });
     }
 
-    const user = users.get(email);
-    if (!user) {
+    const userId = usersByEmail.get(email);
+    if (!userId) {
         return res.status(401).json({ status: 'error', code: 'ERR_INVALID_CREDENTIALS', message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ status: 'success', token, user });
+    const user = users.get(userId);
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    
+    if (!isMatch) {
+        return res.status(401).json({ status: 'error', code: 'ERR_INVALID_CREDENTIALS', message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    res.json({ status: 'success', token, user: { id: user.id, email: user.email } });
 });
 
-// Middleware d'authentification stricte
+// Middleware d'authentification cryptographique
 const authenticateJWT = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.split(' ')[1];
-        jwt.verify(token, JWT_SECRET, (err, user) => {
-            if (err) return res.status(403).json({ status: 'error', code: 'ERR_INVALID_TOKEN', message: 'Token is invalid or expired' });
-            req.user = user;
+        jwt.verify(token, JWT_SECRET, (err, decodedUser) => {
+            if (err) return res.status(401).json({ status: 'error', code: 'ERR_INVALID_TOKEN', message: 'Token is invalid or expired' });
+            req.user = decodedUser;
             next();
         });
     } else {
@@ -108,32 +180,44 @@ const authenticateJWT = (req, res, next) => {
     }
 };
 
-// Endpoint vulnérable au BOLA
-app.get('/api/orders/:id', authenticateJWT, (req, res) => {
-    const orderId = req.params.id;
-    const order = orders.get(orderId);
+// Endpoint sécurisé (Mon profil)
+app.get('/api/users/me', authenticateJWT, (req, res) => {
+    const user = users.get(req.user.id);
+    if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+    
+    res.json({ status: 'success', data: { id: user.id, email: user.email, sensitiveData: user.sensitiveData } });
+});
 
-    if (!order) {
-        return res.status(404).json({ status: 'error', code: 'ERR_NOT_FOUND', message: 'Order not found' });
+// Endpoint vulnérable au BOLA (Lecture de profil d'un autre utilisateur)
+app.get('/api/users/:id', authenticateJWT, (req, res) => {
+    const targetUserId = req.params.id;
+    const targetUser = users.get(targetUserId);
+
+    if (!targetUser) {
+        return res.status(404).json({ status: 'error', code: 'ERR_NOT_FOUND', message: 'User profile not found' });
     }
 
     // ==========================================
     // VULNERABILITÉ BOLA (IDOR) :
-    // L'API vérifie si l'utilisateur est bien connecté (authenticateJWT passe),
-    // MAIS elle ne vérifie pas si la commande lui appartient réellement !
-    // Code manquant : if (order.userId !== req.user.id) return res.status(403).json(...);
+    // L'API vérifie si le token est valide, mais "oublie" de vérifier si 
+    // l'utilisateur demande SON PROPRE profil ou s'il est Administrateur.
+    // Faille : N'importe quel client connecté peut lire les cartes bancaires des autres.
     // ==========================================
 
-    res.json({ status: 'success', data: order });
+    // On masque juste le mot de passe, mais on fuitite les données sensibles
+    const leakedProfile = {
+        id: targetUser.id,
+        email: targetUser.email,
+        role: targetUser.role,
+        sensitiveData: targetUser.sensitiveData // BOUM ! Fuite BOLA.
+    };
+
+    res.json({ status: 'success', data: leakedProfile });
 });
 
-// Gestion des erreurs 404 globales
-app.use((req, res) => {
-    res.status(404).json({ status: 'error', code: 'ERR_NOT_FOUND', message: 'Route not found' });
-});
+// 404
+app.use((req, res) => res.status(404).json({ status: 'error', code: 'ERR_NOT_FOUND', message: 'Route not found' }));
 
-// Lancement du serveur
 app.listen(PORT, () => {
-    console.log(`[TARGET API ROBUSTE] Serveur Express + JWT démarré sur http://localhost:${PORT}`);
-    console.log(`[TARGET API ROBUSTE] Moteur OpenAPI: http://localhost:${PORT}/openapi.json`);
+    console.log(`[SECURE E-COMMERCE API] Serveur demarré sur http://localhost:${PORT}`);
 });
