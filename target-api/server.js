@@ -32,6 +32,15 @@ app.use((req, res, next) => {
 // ROUTES
 // ==========================================
 
+// Accueil (pour rassurer l'utilisateur s'il ouvre localhost:3000 dans son navigateur)
+app.get('/', (req, res) => {
+    res.json({
+        status: "success",
+        message: "Bienvenue sur l'API Cible (Mock Target). L'API est en ligne et prête à être auditée par BOLA-Shield !",
+        docs: "http://localhost:3000/openapi.json"
+    });
+});
+
 // Découverte OpenAPI
 app.get('/openapi.json', (req, res) => {
     res.json({
