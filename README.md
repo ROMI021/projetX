@@ -24,9 +24,10 @@ node server.js
 
 Pour vous entraîner et tester les capacités du bot Puppeteer sans vous heurter à un vrai pare-feu externe (WAF), un faux serveur vulnérable a été inclus.
 1. Ouvrez un second terminal.
-2. Lancez la cible locale : `node target-api/server.js`
-3. Allez sur l'interface de BOLA-Shield, tapez `http://localhost:3000` comme cible, et cliquez sur **Lancer l'audit Live**.
-4. Observez Puppeteer s'inscrire, se connecter et trouver la faille BOLA intentionnelle !
+2. Déplacez-vous dans le dossier cible et installez ses dépendances : `cd target-api && npm install`
+3. Lancez la cible locale : `node server.js`
+4. Allez sur l'interface de BOLA-Shield, tapez `http://localhost:3000` comme cible, et cliquez sur **Lancer l'audit Live**.
+5. Observez Puppeteer s'inscrire, se connecter et trouver la faille BOLA intentionnelle !
 
 ## Nouveautés Récentes (Hardening Production)
 
