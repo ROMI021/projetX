@@ -20,14 +20,14 @@ node server.js
 - Interface UI : <http://localhost:8080>
 - API locale : <http://localhost:8080/api/v1>
 
-## Tester l'Audit Actif (Mock Target)
+## Tester l'Audit Actif (Secure E-Commerce Mock Target)
 
-Pour vous entraîner et tester les capacités du bot Puppeteer sans vous heurter à un vrai pare-feu externe (WAF), un faux serveur vulnérable a été inclus.
+Pour vous entraîner face à un environnement de niveau industriel, un faux backend E-Commerce ultra-sécurisé a été inclus. Il est protégé par **Helmet**, un **Rate Limiter (Anti-DDoS)**, et hache ses mots de passe avec **Bcrypt**. La vulnérabilité BOLA a été cachée dans les profils utilisateurs (`/api/users/:id`).
 1. Ouvrez un second terminal.
-2. Déplacez-vous dans le dossier cible et installez ses dépendances : `cd target-api && npm install`
+2. Déplacez-vous dans le dossier cible et installez ses dépendances de sécurité : `cd target-api && npm install`
 3. Lancez la cible locale : `node server.js`
 4. Allez sur l'interface de BOLA-Shield, tapez `http://localhost:3000` comme cible, et cliquez sur **Lancer l'audit Live**.
-5. Observez Puppeteer s'inscrire, se connecter et trouver la faille BOLA intentionnelle !
+5. Observez Puppeteer s'adapter au Rate Limiting, s'inscrire, se connecter, et extraire illicitement les données bancaires d'un autre profil grâce au BOLA !
 
 ## Nouveautés Récentes (Hardening Production)
 
