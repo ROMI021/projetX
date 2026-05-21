@@ -246,3 +246,175 @@ export function loadPersistedState() {
         return false;
     }
 }
+
+/**
+ * Recalculate the global security score and sync UI widgets.
+ */
+export function recalculateSecurityScore() {
+    const hasScan = state.scanned && state.discoveredEndpoints && state.discoveredEndpoints.length > 0;
+    
+    let score = 30;
+    let exposureRate = 72;
+    let patchedVulns = 0;
+    let totalVulns = 0;
+    
+    Object.keys(state.vulnerabilities).forEach(tech => {
+        state.vulnerabilities[tech].forEach(v => {
+            totalVulns++;
+            if (v.patched) patchedVulns++;
+        });
+    });
+
+    if (hasScan) {
+        let baseScore = 50;
+        const live = state.lastAuditResult;
+        if (live) {
+            if (live.notAuditable) {
+                baseScore = 55;
+            } else if (live.isBOLA) {
+                baseScore = 25;
+            } else {
+                baseScore = 85;
+            }
+        }
+        if (state.shieldActive) baseScore += 15;
+        score = Math.min(baseScore, 100);
+        exposureRate = Math.max(100 - score, 0);
+    } else {
+        let localScore = 30;
+        const patchWeight = 40;
+        if (totalVulns > 0) {
+            localScore += Math.round((patchedVulns / totalVulns) * patchWeight);
+        }
+        if (state.shieldActive) localScore += 15;
+        if (document.getElementById('toggle-active-scan')?.checked) localScore += 5;
+        if (document.getElementById('toggle-tokenization')?.checked) localScore += 10;
+        if (document.getElementById('toggle-vpn-block')?.checked) localScore += 5;
+        if (document.getElementById('toggle-emergency-shield')?.checked) localScore += 10;
+
+        score = Math.min(localScore, 100);
+        exposureRate = Math.max(100 - score - 10, 0);
+        if (exposureRate === 0 && patchedVulns === totalVulns) {
+            exposureRate = 0;
+        }
+    }
+
+    state.securityScore = score;
+    state.metrics.exposureRate = exposureRate;
+
+    const expRateElement = document.getElementById('metric-exposure-rate');
+    if (expRateElement) {
+        expRateElement.innerText = `${state.metrics.exposureRate}%`;
+        const metricCard = expRateElement.closest('.metric-card');
+        
+        if (state.metrics.exposureRate < 20) {
+            if (metricCard) metricCard.className = 'metric-card card-glow-success';
+            expRateElement.className = 'metric-value text-success';
+        } else if (state.metrics.exposureRate < 50) {
+            if (metricCard) metricCard.className = 'metric-card card-glow-warning';
+            expRateElement.className = 'metric-value text-warning';
+        } else {
+            if (metricCard) metricCard.className = 'metric-card card-glow-danger';
+            expRateElement.className = 'metric-value text-danger';
+        }
+    }
+
+    const blockedMetric = document.getElementById('metric-blocked-attacks');
+    if (blockedMetric) blockedMetric.innerText = state.metrics.blockedAttacks.toLocaleString();
+    
+    const leakedMetric = document.getElementById('metric-data-leaked');
+    if (leakedMetric) leakedMetric.innerText = state.metrics.dataLeaked.toLocaleString();
+    
+    const savingsMetric = document.getElementById('metric-financial-savings');
+    if (savingsMetric) savingsMetric.innerText = `${state.metrics.financialSavings.toLocaleString()} €`;
+
+    const footerExposure = document.getElementById('footer-exposure-rate');
+    const footerLeaked = document.getElementById('footer-data-leaked');
+    const footerBlocked = document.getElementById('footer-blocked-attacks');
+    const footerSavings = document.getElementById('footer-financial-savings');
+
+    if (hasScan) {
+        const live = state.lastAuditResult;
+        let host = 'Cible';
+        try {
+            if (live && live.base) {
+                host = new URL(live.base).hostname;
+            } else if (state.discoveredEndpoints && state.discoveredEndpoints.length > 0) {
+                host = new URL(state.discoveredEndpoints[0].path).hostname;
+            }
+        } catch (_) {}
+
+        if (footerExposure) {
+            if (live) {
+                if (live.notAuditable) {
+                    footerExposure.innerHTML = `<span class="text-warning">⚠️ Audit passif</span> &bull; ${state.discoveredEndpoints.length} routes à vérifier sur ${host}`;
+                } else if (live.isBOLA) {
+                    footerExposure.innerHTML = `<span class="text-danger">🔴 Critique BOLA</span> &bull; Brèche confirmée sur ${host}`;
+                } else {
+                    footerExposure.innerHTML = `<span class="text-success">🟢 Sécurisé</span> &bull; ${state.discoveredEndpoints.length} routes validées sur ${host}`;
+                }
+            } else {
+                footerExposure.innerHTML = `<span class="text-warning">🔍 Découvert</span> &bull; ${state.discoveredEndpoints.length} routes identifiées sur ${host}`;
+            }
+        }
+
+        if (footerLeaked) {
+            if (live && live.isBOLA) {
+                footerLeaked.innerHTML = `<span class="text-danger">Fuites actives</span> de ressources sur ${host}`;
+            } else {
+                footerLeaked.innerHTML = `<span class="text-success">Zéro fuite</span> de données détectée sur ${host}`;
+            }
+        }
+
+        if (footerBlocked) {
+            footerBlocked.innerHTML = `<span class="text-success">Auditeur Live actif</span> &bull; Cible : ${host}`;
+        }
+
+        if (footerSavings) {
+            footerSavings.innerHTML = `Économies estimées d'exposition aux risques sur ${host}`;
+        }
+    } else {
+        if (footerExposure) {
+            const left = totalVulns - patchedVulns;
+            if (left > 0) {
+                footerExposure.innerHTML = `<span class="text-danger">Élevé</span> &bull; ${left} endpoints sur ${totalVulns} vulnérables`;
+            } else {
+                footerExposure.innerHTML = `<span class="text-success">Excellent</span> &bull; ${totalVulns} endpoints sandbox sécurisés`;
+            }
+        }
+        if (footerLeaked) {
+            footerLeaked.innerHTML = `<span class="text-warning">Invoices / Customer files</span> à haut risque`;
+        }
+        if (footerBlocked) {
+            footerBlocked.innerHTML = `<span class="text-success">+18% aujourd'hui</span> &bull; Pare-feu IA actif`;
+        }
+        if (footerSavings) {
+            footerSavings.innerHTML = `Basé sur le coût moyen RGPD & Rétrofacturations`;
+        }
+    }
+
+    if (widget && valueText && statusText && circle) {
+        widget.className = 'security-health-widget';
+        let status = '';
+        
+        if (state.securityScore < 50) {
+            widget.classList.add('danger');
+            status = 'CRITIQUE';
+            statusText.className = 'health-status text-danger animate-pulse';
+        } else if (state.securityScore < 85) {
+            widget.classList.add('warning');
+            status = 'VULNÉRABLE';
+            statusText.className = 'health-status text-warning';
+        } else {
+            widget.classList.add('success');
+            status = 'SÉCURISÉ';
+            statusText.className = 'health-status text-success';
+        }
+
+        valueText.innerText = `${state.securityScore}%`;
+        statusText.innerText = status;
+        circle.setAttribute('stroke-dasharray', `${state.securityScore}, 100`);
+    }
+
+    savePersistedState();
+}

@@ -13,6 +13,35 @@ const JWT_SECRET = 's3cr3t_k3y_for_b0la_sh13ld_t3st1ng_0nly';
 const users = new Map(); // id -> { id, email, passwordHash, role, sensitiveData }
 const usersByEmail = new Map(); // email -> id
 
+const BOT_HONEYPOT_FIELDS = ['middleName', 'botField', 'hiddenField'];
+const VALID_CAPTCHA_TOKENS = new Set(['valid_human_token', 'human_passed', 'captcha_ok', 'robot_check_passed']);
+const AUTH_HEADERS_REQUIREMENT = ['user-agent'];
+
+function isValidCaptcha(body) {
+    return body && typeof body === 'object' && (VALID_CAPTCHA_TOKENS.has(body.captchaToken) || VALID_CAPTCHA_TOKENS.has(body.gRecaptchaResponse) || VALID_CAPTCHA_TOKENS.has(body.recaptchaToken) || VALID_CAPTCHA_TOKENS.has(body.humanProof));
+}
+
+function hasHoneypotTaint(body) {
+    return body && typeof body === 'object' && BOT_HONEYPOT_FIELDS.some(field => body[field] !== undefined && body[field] !== '');
+}
+
+function mustHaveBrowserHeaders(req) {
+    for (const header of AUTH_HEADERS_REQUIREMENT) {
+        if (!req.headers[header]) return false;
+    }
+    return true;
+}
+
+function buildFormHtml(action, fields = []) {
+    const inputs = fields.map(field => {
+        const attrs = Object.entries(field)
+            .map(([key, value]) => `${key}="${String(value).replace(/"/g, '&quot;')}"`)
+            .join(' ');
+        return `<div style="margin-bottom:12px;"><label>${field.label || field.name}: <input ${attrs} /></label></div>`;
+    }).join('');
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Auth Form</title></head><body><h1>${action}</h1><form method="POST" action="${action}">${inputs}<button type="submit">Submit</button></form></body></html>`;
+}
+
 // Peuplement initial
 const seedData = () => {
     const adminId = 'usr_admin_' + Date.now();
@@ -86,83 +115,106 @@ app.get('/openapi.json', (req, res) => {
     });
 });
 
-// Inscription
+// Inscription (formulaire HTML et API)
+app.get('/api/auth/register', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(buildFormHtml('/api/auth/register', [
+        { name: 'email', type: 'email', placeholder: 'user@example.com', label: 'Email' },
+        { name: 'username', type: 'text', placeholder: 'username', label: 'Username' },
+        { name: 'password', type: 'password', placeholder: 'password', label: 'Password' },
+        { name: 'captchaToken', type: 'text', placeholder: 'valid_human_token', label: 'Captcha Token' },
+        { name: 'termsAccepted', type: 'checkbox', label: 'Terms accepted' },
+        { name: 'middleName', type: 'text', value: '', style: 'display:none;' }
+    ]));
+});
 app.post('/api/auth/register', async (req, res) => {
-    const { email, password, captchaToken } = req.body;
-    
-    // Simulation d'un Anti-Bot robuste (CAPTCHA)
-    if (!captchaToken || captchaToken !== 'valid_human_token') {
-        return res.status(403).json({ 
-            status: 'error', 
-            code: 'ERR_BOT_DETECTED', 
-            message: 'Captcha validation failed. Automated bot activity suspected.' 
-        });
+    const { email, username, password, captchaToken, gRecaptchaResponse, recaptchaToken, humanProof, termsAccepted } = req.body;
+
+    if (!mustHaveBrowserHeaders(req) || hasHoneypotTaint(req.body)) {
+        return res.status(403).json({ status: 'error', code: 'ERR_BOT_DETECTED', message: 'Bot-like authentication pattern detected.' });
     }
 
-    // Input validation stricte
+    if (!isValidCaptcha(req.body)) {
+        return res.status(403).json({ status: 'error', code: 'ERR_BOT_DETECTED', message: 'Captcha validation failed. Automated bot activity suspected.' });
+    }
+
     if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
-        return res.status(422).json({ status: 'error', code: 'ERR_MISSING_FIELDS', message: 'Valid email and password are required' });
+        return res.status(422).json({ status: 'error', code: 'ERR_MISSING_FIELDS', message: 'Valid email and password are required.' });
     }
     if (password.length < 8) {
-        return res.status(422).json({ status: 'error', code: 'ERR_WEAK_PASSWORD', message: 'Password must be at least 8 characters long' });
+        return res.status(422).json({ status: 'error', code: 'ERR_WEAK_PASSWORD', message: 'Password must be at least 8 characters long.' });
+    }
+    if (termsAccepted !== true && termsAccepted !== 'true' && termsAccepted !== 'on') {
+        return res.status(422).json({ status: 'error', code: 'ERR_TERMS_REQUIRED', message: 'Terms must be accepted.' });
     }
 
-    if (usersByEmail.has(email)) {
-        return res.status(409).json({ status: 'error', code: 'ERR_EMAIL_EXISTS', message: 'Email already registered' });
+    const normalizedEmail = email.toLowerCase().trim();
+    if (usersByEmail.has(normalizedEmail)) {
+        return res.status(409).json({ status: 'error', code: 'ERR_EMAIL_EXISTS', message: 'Email already registered.' });
     }
 
-    const userId = 'usr_' + Buffer.from(email).toString('base64').substring(0, 15) + Math.floor(Math.random() * 1000);
+    const userId = 'usr_' + Buffer.from(normalizedEmail).toString('base64').substring(0, 15) + Math.floor(Math.random() * 1000);
     const passwordHash = await bcrypt.hash(password, 10);
-    
-    const user = { 
-        id: userId, 
-        email, 
-        passwordHash, 
+    const user = {
+        id: userId,
+        email: normalizedEmail,
+        username: username ? String(username).trim() : normalizedEmail.split('@')[0],
+        passwordHash,
         role: 'customer',
         sensitiveData: { creditCard: 'No card on file', address: 'No address' }
     };
-    
-    users.set(userId, user);
-    usersByEmail.set(email, userId);
 
-    // JWT (sans données sensibles)
+    users.set(userId, user);
+    usersByEmail.set(normalizedEmail, userId);
+
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
-    
-    // Retourne l'ID et l'email uniquement. AUCUN orderId truqué.
-    res.status(201).json({ status: 'success', token, user: { id: user.id, email: user.email } });
+    res.status(201).json({ status: 'success', token, user: { id: user.id, email: user.email, username: user.username } });
 });
 
-// Connexion
+// Connexion (formulaire HTML et API)
+app.get('/api/auth/login', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(buildFormHtml('/api/auth/login', [
+        { name: 'email', type: 'email', placeholder: 'user@example.com', label: 'Email' },
+        { name: 'username', type: 'text', placeholder: 'username', label: 'Username' },
+        { name: 'password', type: 'password', placeholder: 'password', label: 'Password' },
+        { name: 'captchaToken', type: 'text', placeholder: 'valid_human_token', label: 'Captcha Token' },
+        { name: 'middleName', type: 'text', value: '', style: 'display:none;' }
+    ]));
+});
 app.post('/api/auth/login', async (req, res) => {
-    const { email, password, captchaToken } = req.body;
+    const { email, username, password } = req.body;
 
-    // Simulation d'un Anti-Bot robuste (CAPTCHA)
-    if (!captchaToken || captchaToken !== 'valid_human_token') {
-        return res.status(403).json({ 
-            status: 'error', 
-            code: 'ERR_BOT_DETECTED', 
-            message: 'Captcha validation failed. Automated bot activity suspected.' 
-        });
+    if (!mustHaveBrowserHeaders(req) || hasHoneypotTaint(req.body)) {
+        return res.status(403).json({ status: 'error', code: 'ERR_BOT_DETECTED', message: 'Bot-like authentication pattern detected.' });
     }
 
-    if (!email || !password) {
-        return res.status(422).json({ status: 'error', code: 'ERR_MISSING_FIELDS', message: 'Email and password are required' });
+    if (!isValidCaptcha(req.body)) {
+        return res.status(403).json({ status: 'error', code: 'ERR_BOT_DETECTED', message: 'Captcha validation failed. Automated bot activity suspected.' });
     }
 
-    const userId = usersByEmail.get(email);
+    if (!password || typeof password !== 'string' || (!email && !username)) {
+        return res.status(422).json({ status: 'error', code: 'ERR_MISSING_FIELDS', message: 'Email or username and password are required.' });
+    }
+
+    const normalizedEmail = email ? String(email).toLowerCase().trim() : null;
+    const normalizedUsername = username ? String(username).trim() : null;
+    let userId = normalizedEmail ? usersByEmail.get(normalizedEmail) : null;
+    if (!userId && normalizedUsername) {
+        userId = [...users.values()].find(u => u.username === normalizedUsername)?.id || null;
+    }
     if (!userId) {
-        return res.status(401).json({ status: 'error', code: 'ERR_INVALID_CREDENTIALS', message: 'Invalid credentials' });
+        return res.status(401).json({ status: 'error', code: 'ERR_INVALID_CREDENTIALS', message: 'Invalid credentials.' });
     }
 
     const user = users.get(userId);
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    
     if (!isMatch) {
-        return res.status(401).json({ status: 'error', code: 'ERR_INVALID_CREDENTIALS', message: 'Invalid credentials' });
+        return res.status(401).json({ status: 'error', code: 'ERR_INVALID_CREDENTIALS', message: 'Invalid credentials.' });
     }
 
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ status: 'success', token, user: { id: user.id, email: user.email } });
+    res.json({ status: 'success', token, user: { id: user.id, email: user.email, username: user.username } });
 });
 
 // Middleware d'authentification cryptographique
@@ -188,7 +240,7 @@ app.get('/api/users/me', authenticateJWT, (req, res) => {
     res.json({ status: 'success', data: { id: user.id, email: user.email, sensitiveData: user.sensitiveData } });
 });
 
-// Endpoint vulnérable au BOLA (Lecture de profil d'un autre utilisateur)
+// Endpoint protégé : profil utilisateur par ID
 app.get('/api/users/:id', authenticateJWT, (req, res) => {
     const targetUserId = req.params.id;
     const targetUser = users.get(targetUserId);
@@ -197,22 +249,20 @@ app.get('/api/users/:id', authenticateJWT, (req, res) => {
         return res.status(404).json({ status: 'error', code: 'ERR_NOT_FOUND', message: 'User profile not found' });
     }
 
-    // ==========================================
-    // VULNERABILITÉ BOLA (IDOR) :
-    // L'API vérifie si le token est valide, mais "oublie" de vérifier si 
-    // l'utilisateur demande SON PROPRE profil ou s'il est Administrateur.
-    // Faille : N'importe quel client connecté peut lire les cartes bancaires des autres.
-    // ==========================================
+    if (req.user.id !== targetUserId && req.user.role !== 'admin') {
+        return res.status(404).json({ status: 'error', code: 'ERR_NOT_FOUND', message: 'User profile not found' });
+    }
 
-    // On masque juste le mot de passe, mais on fuitite les données sensibles
-    const leakedProfile = {
+    const profile = {
         id: targetUser.id,
         email: targetUser.email,
-        role: targetUser.role,
-        sensitiveData: targetUser.sensitiveData // BOUM ! Fuite BOLA.
+        role: targetUser.role
     };
+    if (req.user.id === targetUserId || req.user.role === 'admin') {
+        profile.sensitiveData = targetUser.sensitiveData;
+    }
 
-    res.json({ status: 'success', data: leakedProfile });
+    res.json({ status: 'success', data: profile });
 });
 
 // 404
