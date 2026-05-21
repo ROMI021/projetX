@@ -9,13 +9,18 @@ const app = express();
 const PORT = 3000;
 const JWT_SECRET = 's3cr3t_k3y_for_b0la_sh13ld_t3st1ng_0nly';
 
+const crypto = require('crypto');
+
+const SERVER_SECRET = crypto.randomBytes(32).toString('hex');
+
 // Bases de données simulées
 const users = new Map(); // id -> { id, email, passwordHash, role, sensitiveData }
 const usersByEmail = new Map(); // email -> id
 
 const BOT_HONEYPOT_FIELDS = ['middleName', 'botField', 'hiddenField'];
 const VALID_CAPTCHA_TOKENS = new Set(['valid_human_token', 'human_passed', 'captcha_ok', 'robot_check_passed']);
-const AUTH_HEADERS_REQUIREMENT = ['user-agent'];
+// Headers stricts : Un bot omet souvent ces en-têtes complexes
+const AUTH_HEADERS_REQUIREMENT = ['user-agent', 'accept-language'];
 
 function isValidCaptcha(body) {
     return body && typeof body === 'object' && (VALID_CAPTCHA_TOKENS.has(body.captchaToken) || VALID_CAPTCHA_TOKENS.has(body.gRecaptchaResponse) || VALID_CAPTCHA_TOKENS.has(body.recaptchaToken) || VALID_CAPTCHA_TOKENS.has(body.humanProof));
@@ -29,7 +34,39 @@ function mustHaveBrowserHeaders(req) {
     for (const header of AUTH_HEADERS_REQUIREMENT) {
         if (!req.headers[header]) return false;
     }
+    // Sec-Fetch-Dest is often 'empty' for fetch/XHR, 'document' for navigation. 
+    // We check if it's completely missing (which happens in basic HTTP clients)
+    if (!req.headers['sec-fetch-mode'] && !req.headers['origin']) {
+        return false;
+    }
     return true;
+}
+
+function generateProofOfTime() {
+    const timestamp = Date.now();
+    const hash = crypto.createHmac('sha256', SERVER_SECRET).update(timestamp.toString()).digest('hex');
+    return `${timestamp}.${hash}`;
+}
+
+function verifyProofOfTime(token) {
+    if (!token) return { valid: false, reason: 'Missing PoT token' };
+    const [ts, hash] = token.split('.');
+    if (!ts || !hash) return { valid: false, reason: 'Malformed PoT token' };
+    
+    const expectedHash = crypto.createHmac('sha256', SERVER_SECRET).update(ts).digest('hex');
+    if (hash !== expectedHash) return { valid: false, reason: 'Invalid PoT signature' };
+    
+    const timePassed = Date.now() - parseInt(ts, 10);
+    if (timePassed < 2000) return { valid: false, reason: `Too fast: ${timePassed}ms (Bot detected)` };
+    if (timePassed > 600000) return { valid: false, reason: `Too slow: ${timePassed}ms (Session expired)` };
+    
+    return { valid: true };
+}
+
+function hasValidEntropy(entropy) {
+    if (!entropy || typeof entropy !== 'string') return false;
+    // Les vrais sites vérifient les coordonnées de la souris
+    return entropy.length > 10 && entropy.includes('m:');
 }
 
 function buildFormHtml(action, fields = []) {
@@ -82,6 +119,13 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
+// Rate Limit Agressif spécifique pour l'inscription
+const registerLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 heure
+    max: 3, // Strict : max 3 inscriptions par IP par heure
+    message: { status: 'error', code: 'ERR_RATE_LIMIT_STRICT', message: 'Too many registration attempts. IP blocked for 1 hour.' }
+});
+
 // 5. Simulation de latence réseau réaliste (50ms - 150ms)
 app.use((req, res, next) => {
     const delay = Math.floor(Math.random() * 100) + 50;
@@ -118,23 +162,45 @@ app.get('/openapi.json', (req, res) => {
 // Inscription (formulaire HTML et API)
 app.get('/api/auth/register', (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    const potToken = generateProofOfTime();
     res.send(buildFormHtml('/api/auth/register', [
         { name: 'email', type: 'email', placeholder: 'user@example.com', label: 'Email' },
         { name: 'username', type: 'text', placeholder: 'username', label: 'Username' },
         { name: 'password', type: 'password', placeholder: 'password', label: 'Password' },
         { name: 'captchaToken', type: 'text', placeholder: 'valid_human_token', label: 'Captcha Token' },
         { name: 'termsAccepted', type: 'checkbox', label: 'Terms accepted' },
-        { name: 'middleName', type: 'text', value: '', style: 'display:none;' }
+        { name: 'middleName', type: 'text', value: '', style: 'display:none;' },
+        { name: 'clientEntropy', type: 'hidden', value: '' }, // Rempli par le JS du client
+        { name: 'potToken', type: 'hidden', value: potToken } // Jeton de temps
     ]));
 });
-app.post('/api/auth/register', async (req, res) => {
-    const { email, username, password, captchaToken, gRecaptchaResponse, recaptchaToken, humanProof, termsAccepted } = req.body;
+app.post('/api/auth/register', registerLimiter, async (req, res) => {
+    const { email, username, password, captchaToken, gRecaptchaResponse, recaptchaToken, humanProof, termsAccepted, clientEntropy, potToken } = req.body;
 
+    console.log(`[TARGET-API] Tentative d'inscription depuis l'IP ${req.ip}`);
+
+    // 1. Vérification des Headers
     if (!mustHaveBrowserHeaders(req) || hasHoneypotTaint(req.body)) {
+        console.warn(`[TARGET-API] Bot bloqué (Headers manquants ou Honeypot touché)`);
         return res.status(403).json({ status: 'error', code: 'ERR_BOT_DETECTED', message: 'Bot-like authentication pattern detected.' });
     }
 
+    // 2. Vérification de l'entropie (Souris/Clavier)
+    if (!hasValidEntropy(clientEntropy)) {
+        console.warn(`[TARGET-API] Bot bloqué (Entropie client invalide)`);
+        return res.status(403).json({ status: 'error', code: 'ERR_BOT_DETECTED', message: 'Missing client interaction entropy.' });
+    }
+
+    // 3. Vérification du Temps de Soumission (PoT)
+    const potVerification = verifyProofOfTime(potToken);
+    if (!potVerification.valid) {
+        console.warn(`[TARGET-API] Bot bloqué (PoT invalide: ${potVerification.reason})`);
+        return res.status(403).json({ status: 'error', code: 'ERR_BOT_DETECTED', message: `Behavioral timing verification failed: ${potVerification.reason}` });
+    }
+
+    // 4. Captcha classique
     if (!isValidCaptcha(req.body)) {
+        console.warn(`[TARGET-API] Bot bloqué (Captcha invalide)`);
         return res.status(403).json({ status: 'error', code: 'ERR_BOT_DETECTED', message: 'Captcha validation failed. Automated bot activity suspected.' });
     }
 

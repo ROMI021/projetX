@@ -393,6 +393,11 @@ export function recalculateSecurityScore() {
         }
     }
 
+    const widget = document.getElementById('security-health-widget');
+    const valueText = document.getElementById('security-health-value');
+    const statusText = document.getElementById('security-health-status');
+    const circle = document.querySelector('.progress-ring-circle');
+
     if (widget && valueText && statusText && circle) {
         widget.className = 'security-health-widget';
         let status = '';
