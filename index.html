@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOLA-Shield AI — Détecteur & Correcteur Intelligent de Failles d'Autorisation E-Commerce</title>
+    <!-- Google Fonts: Inter & Fira Code -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js for High-performance Canvas Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Link to custom premium style -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M12 8v4"/>
+                        <path d="M12 16h.01"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-brand">BOLA-Shield</span>
+                    <span class="logo-tag">SECURE-AI</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="dashboard" id="btn-tab-dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    <span>Tableau de Bord</span>
+                </button>
+                <button class="nav-item" data-tab="scanner" id="btn-tab-scanner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 2v20M2 12h20"/>
+                        <path d="M12 12l5 5"/>
+                    </svg>
+                    <span>Scan Multi-Acteurs</span>
+                    <span class="tab-indicator" style="display: none;"></span>
+                </button>
+                <button class="nav-item" data-tab="patcher" id="btn-tab-patcher">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                    </svg>
+                    <span>Correcteur IA</span>
+                    <span class="tab-indicator" style="display: none;"></span>
+                </button>
+                <button class="nav-item" data-tab="mapper" id="btn-tab-mapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                    <span>Carte des Objets</span>
+                    <span class="tab-indicator" style="display: none;"></span>
+                </button>
+                <button class="nav-item" data-tab="chat" id="btn-tab-chat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span>Analyste BOLA IA</span>
+                    <span class="tab-indicator" style="display: none;"></span>
+                </button>
+                <button class="nav-item" data-tab="firewall" id="btn-tab-firewall">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                    </svg>
+                    <span>Pare-feu & Règles</span>
+                    <span class="tab-indicator" style="display: none;"></span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="store-info">
+                    <div class="store-url">api.mboa-shop.com</div>
+                    <div class="store-status online">
+                        <span class="status-indicator animate-pulse"></span>
+                        <span>API Surveillée</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-title">
+                    <div class="breadcrumb">BOLA-Shield AI / <span id="current-tab-name">Tableau de Bord</span></div>
+                    <h1 class="page-title" id="page-main-title">Aperçu de Sécurité API</h1>
+                </div>
+
+                <div class="header-actions">
+                    <a class="cyber-btn btn-secondary" id="btn-export-report" href="/api/v1/report?format=markdown" download="bola-shield-report.md">
+                        <span>Exporter Rapport</span>
+                    </a>
+                    <!-- Security Rating Badge -->
+                    <div class="security-health-widget" id="header-health-badge">
+                        <div class="health-gauge">
+                            <svg viewBox="0 0 36 36" class="circular-chart">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path class="circle" id="health-circle" stroke-dasharray="45, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <span class="health-value" id="health-value-text">45%</span>
+                        </div>
+                        <div class="health-meta">
+                            <div class="health-label">Niveau de Risque</div>
+                            <div class="health-status text-danger animate-pulse" id="health-status-text">CRITIQUE</div>
+                        </div>
+                    </div>
+
+                    <!-- Shield Status -->
+                    <div class="shield-toggle-container">
+                        <button class="shield-toggle-btn active" id="btn-toggle-shield">
+                            <div class="shield-icon-wrapper">
+                                <svg class="shield-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                </svg>
+                            </div>
+                            <span id="shield-status-label">Bouclier Actif</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area (Tabs Container) -->
+            <div class="tab-content-container">
+
+                <!-- 1. DASHBOARD TAB -->
+                <section class="tab-pane active" id="tab-dashboard">
+                    <!-- Quick Actions Navigation Bar -->
+                    <div class="quick-actions-bar">
+                        <div class="action-group">
+                            <span class="action-label">Actions Rapides :</span>
+                            <button class="action-btn action-scanner" data-navigate="scanner">
+                                <span class="action-icon">🔍</span> Scanner
+                            </button>
+                            <button class="action-btn action-patcher" data-navigate="patcher">
+                                <span class="action-icon">🔧</span> Correcteur
+                            </button>
+                            <button class="action-btn action-mapper" data-navigate="mapper">
+                                <span class="action-icon">🗺️</span> Graphe
+                            </button>
+                            <button class="action-btn action-firewall" data-navigate="firewall">
+                                <span class="action-icon">🛡️</span> Pare-feu
+                            </button>
+                            <button class="action-btn action-chat" data-navigate="chat">
+                                <span class="action-icon">💬</span> Analyste IA
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Metric Cards Grid -->
+                    <div class="metrics-grid">
+                        <div class="metric-card card-glow-danger">
+                            <div class="metric-header">
+                                <span class="metric-title">Score d'Exposition BOLA</span>
+                                <div class="metric-icon bg-danger-transparent text-danger">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                </div>
+                            </div>
+                            <div class="metric-value text-danger" id="metric-exposure-rate">72%</div>
+                            <div class="metric-progress-bar">
+                                <div class="progress-track">
+                                    <div class="progress-fill progress-danger" style="width: 72%"></div>
+                                </div>
+                                <div class="progress-labels">
+                                    <span class="progress-label-min">0%</span>
+                                    <span class="progress-label-max">100%</span>
+                                </div>
+                            </div>
+                            <div class="metric-footer" id="footer-exposure-rate">
+                                <span class="text-danger">Élevé</span> &bull; 9 endpoints sur 12 vulnérables
+                            </div>
+                        </div>
+                        <div class="metric-card card-glow-warning">
+                            <div class="metric-header">
+                                <span class="metric-title">Fuite de Données Estimée</span>
+                                <div class="metric-icon bg-warning-transparent text-warning">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                </div>
+                            </div>
+                            <div class="metric-value text-warning" id="metric-data-leaked">42 850</div>
+                            <div class="metric-progress-bar">
+                                <div class="progress-track">
+                                    <div class="progress-fill progress-warning" style="width: 65%"></div>
+                                </div>
+                                <div class="progress-labels">
+                                    <span class="progress-label-min">0</span>
+                                    <span class="progress-label-max">100K</span>
+                                </div>
+                            </div>
+                            <div class="metric-footer" id="footer-data-leaked">
+                                <span class="text-warning">Invoices / Customer files</span> à haut risque
+                            </div>
+                        </div>
+                        <div class="metric-card card-glow-success">
+                            <div class="metric-header">
+                                <span class="metric-title">Attaques BOLA Bloquées</span>
+                                <div class="metric-icon bg-success-transparent text-success">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                </div>
+                            </div>
+                            <div class="metric-value text-success" id="metric-blocked-attacks">1 428</div>
+                            <div class="metric-progress-bar">
+                                <div class="progress-track">
+                                    <div class="progress-fill progress-success" style="width: 78%"></div>
+                                </div>
+                                <div class="progress-labels">
+                                    <span class="progress-label-min">0</span>
+                                    <span class="progress-label-max">2K</span>
+                                </div>
+                            </div>
+                            <div class="metric-footer" id="footer-blocked-attacks">
+                                <span class="text-success">+18% aujourd'hui</span> &bull; Pare-feu IA actif
+                            </div>
+                        </div>
+                        <div class="metric-card card-glow-primary">
+                            <div class="metric-header">
+                                <span class="metric-title">Pertes Financières Évitées</span>
+                                <div class="metric-icon bg-primary-transparent text-primary">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                </div>
+                            </div>
+                            <div class="metric-value text-primary" id="metric-financial-savings">243 100 €</div>
+                            <div class="metric-progress-bar">
+                                <div class="progress-track">
+                                    <div class="progress-fill progress-primary" style="width: 82%"></div>
+                                </div>
+                                <div class="progress-labels">
+                                    <span class="progress-label-min">0€</span>
+                                    <span class="progress-label-max">300K€</span>
+                                </div>
+                            </div>
+                            <div class="metric-footer" id="footer-financial-savings">
+                                Basé sur le coût moyen RGPD & Rétrofacturations
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Dashboard Split Layout -->
+                    <div class="dashboard-split">
+                        <!-- Chart section -->
+                        <div class="panel panel-chart card-glow-primary">
+                            <div class="panel-header">
+                                <div>
+                                    <h3 class="panel-title">Tentatives d'Exploitations BOLA</h3>
+                                    <p class="panel-subtitle">Analyse horaire des requêtes d'usurpation d'identifiants d'objets</p>
+                                </div>
+                                <div class="panel-actions">
+                                    <select class="cyber-select" id="chart-timeframe">
+                                        <option value="24h">Dernières 24 Heures</option>
+                                        <option value="7d">7 Derniers Jours</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="panel-body">
+                                <div class="chart-container">
+                                    <canvas id="bolaChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Threat log -->
+                        <div class="panel panel-log">
+                            <div class="panel-header">
+                                <div>
+                                    <h3 class="panel-title">Flux de Requêtes Croisées (Live Sandbox)</h3>
+                                    <p class="panel-subtitle">Audit live d'accès inter-utilisateurs</p>
+                                </div>
+                                <span class="cyber-badge badge-danger-glow animate-pulse">LIVE EXPLOIT WATCH</span>
+                            </div>
+                            <div class="panel-body flex-column scrollable-container">
+                                <div class="log-console" id="dashboard-console-logs">
+                                    <!-- Dynamic logs will appear here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. MULTI-ACTOR SCANNER TAB -->
+                <section class="tab-pane" id="tab-scanner">
+                    <div class="scanner-layout">
+                        <!-- Scan Configuration and Radar -->
+                        <div class="panel panel-scan-control">
+                            <div class="panel-header border-none">
+                                <h3 class="panel-title">Multi-Actor Cross-Testing Engine</h3>
+                            </div>
+                            <div class="panel-body scan-body">
+                                <p class="text-secondary text-sm mb-4">Pour détecter les failles BOLA, le moteur simule ou exécute des connexions avec des droits distincts pour interroger les endpoints avec des tokens de session croisés.</p>
+                                
+                                <!-- Live API testing controls -->
+                                <div class="toggle-card mb-4" style="padding: 12px 16px; background-color: rgba(6, 182, 212, 0.05); border-color: rgba(6, 182, 212, 0.2);">
+                                    <div class="toggle-info">
+                                        <div class="toggle-title text-sm" style="color: var(--color-cyan);">Activer l'Audit API en Direct (Mode Live)</div>
+                                        <div class="toggle-desc" style="font-size: 10px;">Scannez une véritable API locale/distante avec inscription de comptes et moissonnage automatique d'identifiants.</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="toggle-live-scan-mode">
+                                        <span class="slider rounded" style="background-color: rgba(6, 182, 212, 0.1);"></span>
+                                    </label>
+                                </div>
+
+                                <!-- Live Target Configuration (Collapsed by default) -->
+                                <div id="live-scan-config" class="mb-4" style="display: flex; flex-direction: column; gap: 10px; border: 1px dashed var(--border-color); padding: 14px; border-radius: 12px; background-color: rgba(5, 7, 15, 0.5);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <div class="text-xs font-semibold text-primary">URL du site à auditer :</div>
+                                        <button class="cyber-btn btn-secondary text-xs py-1 px-2" id="btn-discover-routes" style="font-size: 9px; padding: 2px 6px;">
+                                            🔍 Détecter les Routes
+                                        </button>
+                                    </div>
+                                    <input type="text" class="cyber-input w-full" id="live-api-base" placeholder="Collez uniquement le lien de l'application (ex: https://exemple.com)" value="">
+                                    <input type="hidden" id="live-api-register" value="">
+                                    <input type="hidden" id="live-api-login" value="">
+                                    <input type="hidden" id="live-api-target" value="">
+                                    <input type="hidden" id="live-api-object-id" value="">
+                                    <input type="hidden" id="live-api-token-a" value="">
+                                    <input type="hidden" id="live-api-token-b" value="">
+                                    <input type="hidden" id="live-api-auth-scheme" value="">
+                                    <textarea id="live-api-user-a" style="display: none;"></textarea>
+                                    <textarea id="live-api-user-b" style="display: none;"></textarea>
+                                    <textarea id="live-api-register-payload-a" style="display: none;"></textarea>
+                                    <textarea id="live-api-register-payload-b" style="display: none;"></textarea>
+                                    <textarea id="live-api-login-payload-a" style="display: none;"></textarea>
+                                    <textarea id="live-api-login-payload-b" style="display: none;"></textarea>
+                                    <div style="font-size: 9px; display: flex; justify-content: space-between; align-items: center;" class="text-muted">
+                                        <span>Collez seulement le lien : le système découvre les routes et choisit le meilleur audit possible.</span>
+                                        <span id="discovery-status-badge" class="text-success font-semibold" style="display: none; font-size: 9px; animation: pulse 1.5s infinite;">Discovery Active</span>
+                                    </div>
+                                    <div class="scan-bot-feed" id="scan-bot-feed" aria-live="polite">
+                                        <div class="scan-bot-feed-title">Journal du bot</div>
+                                        <div class="scan-bot-feed-list" id="scan-bot-feed-list">
+                                            <div class="scan-bot-entry muted">En attente du lancement du scan.</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <div class="radar-container">
+                                    <div class="radar-circle" id="scanner-radar">
+                                        <div class="radar-sweep"></div>
+                                        <div class="radar-grid"></div>
+                                        <div class="radar-center">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                            </svg>
+                                        </div>
+                                        <div class="radar-ping node-vulnerable" style="top: 25%; left: 30%;"></div>
+                                        <div class="radar-ping node-secure" style="top: 60%; left: 70%;"></div>
+                                        <div class="radar-ping node-vulnerable" style="top: 75%; left: 20%;"></div>
+                                        <div class="radar-ping node-vulnerable" style="top: 40%; left: 80%;"></div>
+                                    </div>
+                                    <div class="radar-overlay" id="radar-overlay-text">Radar Prêt</div>
+                                </div>
+
+                                <div class="scan-action-bar">
+                                    <button class="cyber-btn btn-primary btn-lg w-full" id="btn-start-scan">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                                        </svg>
+                                        <span id="btn-start-scan-label">Lancer l'Audit Sémantique BOLA</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scan Matrix Results -->
+                        <div class="panel panel-matrix">
+                            <div class="panel-header">
+                                <div>
+                                    <h3 class="panel-title">Matrice d'Autorisation des Endpoints</h3>
+                                    <p class="panel-subtitle">Résultat des accès croisés aux ressources</p>
+                                </div>
+                                <span class="cyber-badge badge-warning" id="scan-status-badge">Prêt pour Analyse</span>
+                            </div>
+                            <div class="panel-body scrollable-container">
+                                <table class="matrix-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Endpoint API Analysé</th>
+                                            <th class="text-center">Admin</th>
+                                            <th class="text-center">Client A (Propriétaire)</th>
+                                            <th class="text-center">Client B (Tiers)</th>
+                                            <th class="text-center">Anonyme</th>
+                                            <th class="text-center">Risque BOLA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="matrix-tbody">
+                                        <!-- Table dynamically populated by app.js -->
+                                        <tr>
+                                            <td colspan="6" class="text-center text-secondary py-8">Cliquez sur "Lancer l'Audit Sémantique BOLA" pour scanner le système.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. IA CODE PATCHER TAB -->
+                <section class="tab-pane" id="tab-patcher">
+                    <div class="patcher-container">
+                        <!-- Left panel: vulnerabilities selector and explanation -->
+                        <div class="panel panel-vulnerabilities-list">
+                            <div class="panel-header border-none">
+                                <h3 class="panel-title">Failles BOLA Détectées dans le Code</h3>
+                            </div>
+                            <div class="panel-body flex-column">
+                                <p class="text-secondary text-sm mb-4">L'IA de BOLA-Shield a intercepté les fichiers sources responsables des failles d'autorisation. Sélectionnez une faille pour corriger la logique métier en 1 clic.</p>
+                                
+                                <div class="vuln-selector-list" id="patcher-vuln-list">
+                                    <!-- Dynamically filled by app.js -->
+                                </div>
+
+                                <div class="patcher-tech-select-container mt-6">
+                                    <label class="block text-xs font-semibold text-secondary mb-2">Simuler d'autres technologies :</label>
+                                    <div class="tech-pill-grid">
+                                        <button class="tech-pill active" data-tech="nodejs">Express.js (Node)</button>
+                                        <button class="tech-pill" data-tech="php">WooCommerce (PHP)</button>
+                                        <button class="tech-pill" data-tech="rails">Shopify App (Ruby)</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right panel: side-by-side code patcher -->
+                        <div class="panel panel-code-diff">
+                            <div class="panel-header">
+                                <div>
+                                    <h3 class="panel-title">IA Code Refactoring</h3>
+                                    <p class="panel-subtitle" id="patcher-subtitle">Injection de validation d'ownership contextuelle</p>
+                                </div>
+                                <div class="panel-actions">
+                                    <button class="cyber-btn btn-success" id="btn-apply-patch" disabled>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
+                                        <span>Générer & Appliquer le Correctif IA</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="panel-body p-0 flex-row overflow-hidden">
+                                <!-- Vulnerable Code Editor -->
+                                <div class="code-editor-pane pane-vulnerable">
+                                    <div class="editor-header">
+                                        <span class="editor-file-path" id="vuln-file-path">orderController.js</span>
+                                        <span class="editor-status badge-danger">VULNÉRABLE (BOLA)</span>
+                                    </div>
+                                    <pre class="code-block"><code id="code-vuln-content">// Sélectionnez une faille dans la liste de gauche</code></pre>
+                                </div>
+                                <!-- Repaired Code Editor -->
+                                <div class="code-editor-pane pane-repaired">
+                                    <div class="editor-header">
+                                        <span class="editor-file-path" id="repaired-file-path">orderController.js (Patched)</span>
+                                        <span class="editor-status badge-success" id="patched-status-badge">SÉCURISÉ</span>
+                                    </div>
+                                    <pre class="code-block"><code id="code-repaired-content">// Le correctif IA de validation sémantique s'affichera ici</code></pre>
+                                </div>
+                            </div>
+                            <div class="editor-footer-explanation" id="patch-explanation-container">
+                                <div class="explanation-title text-success font-semibold mb-1">Explication de la Correction Sémantique :</div>
+                                <p class="text-secondary text-sm" id="patch-explanation-text">Sélectionnez une faille et cliquez sur le bouton ci-dessus pour générer l'analyse logique de l'IA.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. OBJECT RELATION MAP TAB -->
+                <section class="tab-pane" id="tab-mapper">
+                    <div class="mapper-layout">
+                        <div class="panel panel-map card-glow-primary">
+                            <div class="panel-header">
+                                <div>
+                                    <h3 class="panel-title">Graphe d'Autorisation des Entités API</h3>
+                                    <p class="panel-subtitle">Visualisation des liens sémantiques et des ponts d'accès non sécurisés</p>
+                                </div>
+                                <button class="cyber-btn btn-secondary" id="btn-refresh-map">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                                    </svg>
+                                    <span>Actualiser la Cartographie</span>
+                                </button>
+                            </div>
+                            <div class="panel-body pos-relative p-0 d-flex justify-content-center align-items-center bg-graph">
+                                <!-- Interactive Node Network Graph rendered in SVG -->
+                                <svg class="network-svg" id="network-graph-svg" viewBox="0 0 800 500">
+                                    <!-- Dynamic lines and nodes will be rendered by JS -->
+                                </svg>
+                                
+                                <div class="map-legend">
+                                    <div class="legend-item"><span class="legend-dot dot-cyan"></span><span>Objet Métier</span></div>
+                                    <div class="legend-item"><span class="legend-dot dot-green"></span><span>Lien d'Ownership Sécurisé</span></div>
+                                    <div class="legend-item"><span class="legend-dot dot-red animate-pulse"></span><span>Lien BOLA (Non Vérifié)</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="panel panel-map-details">
+                            <div class="panel-header border-none">
+                                <h3 class="panel-title">Analyse du Graphe d'Objets</h3>
+                            </div>
+                            <div class="panel-body">
+                                <div class="alert-box alert-danger-style" id="map-critical-info">
+                                    <div class="alert-icon">⚠️</div>
+                                    <div class="alert-content">
+                                        <div class="alert-heading">Fuite Transversale Directe</div>
+                                        <p class="text-sm">Le graphe révèle qu'un compte client de type <code>Client</code> peut transiter directement vers la ressource <code>Facture (Invoice)</code> de n'importe quel autre utilisateur sans passer par l'étape de validation d'appartenance de la <code>Commande (Order)</code> correspondante.</p>
+                                    </div>
+                                </div>
+
+                                <div class="object-card mt-6">
+                                    <div class="object-card-title">Objets les Plus Vulnérables :</div>
+                                    <ul class="vulnerable-objects-list">
+                                        <li>
+                                            <span class="obj-name">Invoice (Factures PDF)</span>
+                                            <span class="obj-risk-badge badge-danger">100% EXPOSÉ</span>
+                                        </li>
+                                        <li>
+                                            <span class="obj-name">ShippingAddress (Adresses physiques)</span>
+                                            <span class="obj-risk-badge badge-danger">83% EXPOSÉ</span>
+                                        </li>
+                                        <li>
+                                            <span class="obj-name">OrderDetails (Historique d'achat)</span>
+                                            <span class="obj-risk-badge badge-warning">50% EXPOSÉ</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. AI SECURITY CHAT TAB -->
+                <section class="tab-pane" id="tab-chat">
+                    <div class="chat-container">
+                        <!-- Chat Main Area -->
+                        <div class="panel panel-chat-main">
+                            <div class="panel-header">
+                                <div class="chat-agent-profile">
+                                    <div class="agent-avatar animate-pulse">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="agent-details">
+                                        <h3 class="agent-name">Analyste Virtuel BOLA</h3>
+                                        <span class="agent-status">CISO Virtuel IA &bull; Expert OWASP API Security</span>
+                                    </div>
+                                </div>
+                                <span class="cyber-badge badge-primary-glow">RETR-MODEL-ONLINE</span>
+                            </div>
+                            <div class="panel-body p-0 chat-message-pane" id="chat-messages-box">
+                                <!-- Chat messages will appear here dynamically -->
+                            </div>
+                            <div class="chat-input-bar">
+                                <input type="text" class="cyber-input chat-input-field" id="chat-message-input" placeholder="Posez une question technique sur les failles d'autorisation BOLA, ou demandez à l'IA d'agir..." autocomplete="off">
+                                <button class="cyber-btn btn-primary" id="btn-chat-send">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="22" y1="2" x2="11" y2="13"/>
+                                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                    </svg>
+                                    <span>Envoyer</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Chat Sidebar: Quick Commands -->
+                        <div class="panel panel-chat-sidebar">
+                            <div class="panel-header border-none">
+                                <h3 class="panel-title">Commandes Rapides & Scénarios</h3>
+                            </div>
+                            <div class="panel-body">
+                                <p class="text-secondary text-sm mb-4">Cliquez sur une question ou une commande pour instruire le CISO Virtuel IA d'analyser vos architectures ou d'appliquer des blocages de sécurité.</p>
+                                
+                                <div class="quick-commands-list">
+                                    <button class="cmd-pill" data-msg="Explique-moi en termes simples pourquoi BOLA/IDOR est la faille e-commerce la plus critique.">
+                                        <span>🧐</span> Pourquoi BOLA est-elle critique ?
+                                    </button>
+                                    <button class="cmd-pill" data-msg="Pourquoi un pare-feu classique de type WAF ne peut pas bloquer une faille de type BOLA ?">
+                                        <span>🧱</span> WAF vs Faille logique BOLA
+                                    </button>
+                                    <button class="cmd-pill" data-msg="Rédige-moi un middleware Node.js/Express robuste pour vérifier l'ownership d'une ressource.">
+                                        <span>💻</span> Écrire un Middleware de validation
+                                    </button>
+                                    <button class="cmd-pill" data-msg="Quelles sont les meilleures pratiques pour concevoir des identifiants d'objets (UUID vs auto-incrémentation) ?">
+                                        <span>🔑</span> UUIDs vs IDs Auto-incrémentaux
+                                    </button>
+                                    <button class="cmd-pill" data-msg="AI, active le mode d'urgence anti-fraude immédiatement !">
+                                        <span>🚨</span> Activer le mode d'urgence anti-fraude
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. FIREWALL TAB -->
+                <section class="tab-pane" id="tab-firewall">
+                    <div class="firewall-layout">
+                        <!-- Security Toggles -->
+                        <div class="panel panel-firewall-settings">
+                            <div class="panel-header border-none">
+                                <h3 class="panel-title">IA-Powered API Gateway Shield</h3>
+                            </div>
+                            <div class="panel-body flex-column">
+                                <p class="text-secondary text-sm mb-6">Activez les barrières de protection dynamiques pour bloquer instantanément les comportements anormaux avant même d'avoir patché le code.</p>
+
+                                <div class="toggle-card">
+                                    <div class="toggle-info">
+                                        <div class="toggle-title">Gateway Barrier entre Client et Serveur</div>
+                                        <div class="toggle-desc">Place BOLA-Shield comme proxy d'observation. Les modifications ne sont appliquees qu'en mode approuve avec parametres definis.</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="toggle-gateway-barrier">
+                                        <span class="slider rounded"></span>
+                                    </label>
+                                </div>
+
+                                <div class="gateway-config-box">
+                                    <input type="text" class="cyber-input w-full" id="gateway-target-input" placeholder="Serveur cible a proteger (ex: https://api.exemple.com)">
+                                    <div class="gateway-config-row">
+                                        <select class="cyber-input" id="gateway-mode-select">
+                                            <option value="observe">Observation seule</option>
+                                            <option value="modify-approved">Modifier seulement les parametres approuves</option>
+                                        </select>
+                                        <button class="cyber-btn btn-primary" id="btn-save-gateway">Appliquer</button>
+                                    </div>
+                                    <div class="text-muted text-xs">URL proxy client: <code id="gateway-local-url">/gateway/*</code></div>
+                                </div>
+
+                                <div class="toggle-card">
+                                    <div class="toggle-info">
+                                        <div class="toggle-title">Détection Active des Scans d'Autorisation (BOLA Shield)</div>
+                                        <div class="toggle-desc">Bloque automatiquement les IP qui font plus de 5 tentatives d'accès à des ID d'objets appartenant à d'autres utilisateurs en moins d'une minute.</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="toggle-active-scan" checked>
+                                        <span class="slider rounded"></span>
+                                    </label>
+                                </div>
+
+                                <div class="toggle-card">
+                                    <div class="toggle-info">
+                                        <div class="toggle-title">Masquage des IDs d'Objets par Tokenisation Dynamique</div>
+                                        <div class="toggle-desc">Le pare-feu réécrit les identifiants séquentiels de base de données (ex: order ID 1001) par des tokens éphémères chiffrés pour l'extérieur.</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="toggle-tokenization">
+                                        <span class="slider rounded"></span>
+                                    </label>
+                                </div>
+
+                                <div class="toggle-card">
+                                    <div class="toggle-info">
+                                        <div class="toggle-title">Blocage Automatique des VPN & Proxies Anonymes</div>
+                                        <div class="toggle-desc">Bloque les accès API aux endpoints critiques d'achats et de téléchargement de factures en provenance de réseaux d'anonymisation suspectés.</div>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="toggle-vpn-block" checked>
+                                        <span class="slider rounded"></span>
+                                    </label>
+                                </div>
+
+                                <div class="toggle-card">
+                                    <div class="toggle-info text-danger">
+                                        <div class="toggle-title">Mode de Protection d'Urgence anti-BOLA</div>
+                                        <div class="toggle-desc">Bloque instantanément tout accès API croisé et force l'authentification multifacteur pour toutes les requêtes d'objets.</div>
+                                    </div>
+                                    <label class="switch switch-danger">
+                                        <input type="checkbox" id="toggle-emergency-shield">
+                                        <span class="slider rounded"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Blacklist IP Manager -->
+                        <div class="panel panel-blacklist">
+                            <div class="panel-header">
+                                <div>
+                                    <h3 class="panel-title">Registre de Blocage en Temps Réel</h3>
+                                    <p class="panel-subtitle">IP et sessions suspendues par le bouclier IA</p>
+                                </div>
+                                <button class="cyber-btn btn-danger" id="btn-clear-blacklist">
+                                    <span>Vider la Blacklist</span>
+                                </button>
+                            </div>
+                            <div class="panel-body flex-column">
+                                <div class="blacklist-input-container">
+                                    <input type="text" class="cyber-input w-full" id="blacklist-ip-input" placeholder="Ajouter manuellement une IP ou un range CIDR à bloquer (ex: 185.120.45.2)...">
+                                    <button class="cyber-btn btn-primary" id="btn-add-blacklist">Bloquer</button>
+                                </div>
+
+                                <div class="scrollable-container mt-6 w-full">
+                                    <table class="blacklist-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Adresse IP Bloquée</th>
+                                                <th>Raison du Blocage IA</th>
+                                                <th>Horodatage</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="blacklist-tbody">
+                                            <!-- Dynamically filled by app.js -->
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4 text-secondary">Aucune adresse IP bloquée pour le moment.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- UI Overlay for Alerts -->
+    <div class="custom-alert-overlay" id="global-alert-toast">
+        <div class="alert-toast-box">
+            <span class="toast-icon">🛡️</span>
+            <span class="toast-message" id="global-toast-message">Bouclier Actif</span>
+        </div>
+    </div>
+
+    <!-- Script file containing the dynamic logic -->
+    <script type="module" src="assets/js/main.js"></script>
+</body>
+</html>

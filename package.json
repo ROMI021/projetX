@@ -1,0 +1,17 @@
+{
+  "name": "bola-shield-core",
+  "version": "1.0.0",
+  "description": "BOLA-Shield AI High-Performance Cyber Security Live Scanner & Interceptor Server",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "puppeteer": "^25.0.4"
+  }
+}
