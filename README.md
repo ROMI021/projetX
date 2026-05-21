@@ -31,6 +31,7 @@ Pour vous entraîner face à un environnement de niveau industriel, un faux back
 
 ## Nouveautés Récentes (Hardening Production)
 
+- **IA Adaptative Anti-CAPTCHA :** BOLA-Shield intègre un module "Smart Bypass". S'il heurte un mur anti-bot (`HTTP 403/422` réclamant un Captcha), le moteur analyse l'erreur, simule un délai de résolution (comme s'il interrogeait un réseau OCR 2Captcha), et ré-injecte la solution automatiquement pour forcer la porte d'entrée. 
 - **Flux de logs en temps réel (SSE) :** Les étapes d'audit s'affichent instantanément dans le "Journal du bot" au fur et à mesure que Puppeteer exécute les actions. Protection contre la duplication des logs via la norme stricte `Last-Event-ID` lors des reconnexions réseau.
 - **Moteur Puppeteer Optimisé :** Blocage automatique des ressources lourdes (images, fonts, css) pour des audits extrêmement rapides. Émulation de User-Agent pour réduire le risque de blocage basique.
 - **Métriques Réalistes :** Le tableau de bord affiche des compteurs stricts basés sur le comportement réel du scanner. Si une cible refuse immédiatement la connexion, le système enregistre 0 tentative et passe en cartographie passive.
