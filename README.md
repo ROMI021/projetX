@@ -20,6 +20,14 @@ node server.js
 - Interface UI : <http://localhost:8080>
 - API locale : <http://localhost:8080/api/v1>
 
+## Tester l'Audit Actif (Mock Target)
+
+Pour vous entraîner et tester les capacités du bot Puppeteer sans vous heurter à un vrai pare-feu externe (WAF), un faux serveur vulnérable a été inclus.
+1. Ouvrez un second terminal.
+2. Lancez la cible locale : `node target-api/server.js`
+3. Allez sur l'interface de BOLA-Shield, tapez `http://localhost:3000` comme cible, et cliquez sur **Lancer l'audit Live**.
+4. Observez Puppeteer s'inscrire, se connecter et trouver la faille BOLA intentionnelle !
+
 ## Nouveautés Récentes (Hardening Production)
 
 - **Flux de logs en temps réel (SSE) :** Les étapes d'audit s'affichent instantanément dans le "Journal du bot" au fur et à mesure que Puppeteer exécute les actions. Protection contre la duplication des logs via la norme stricte `Last-Event-ID` lors des reconnexions réseau.
@@ -62,6 +70,9 @@ projet X/
         |   |-- firewall.js      (Configurations du Shield IA)
         |   `-- state.js
         `-- utils/helpers.js
+|-- target-api/              (Mock API factice pour l'entraînement)
+|   |-- server.js
+|   `-- package.json
 ```
 
 ## Sécurité Intégrée
