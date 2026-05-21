@@ -95,16 +95,19 @@ function resetBotFeed(message = 'Initialisation du bot de scan...') {
 }
 
 function appendBotStep(message, type = 'info') {
-    const box = document.getElementById('scan-bot-feed-list');
-    if (!box) return;
+    const list = document.getElementById('scan-bot-feed-list');
+    const container = document.getElementById('scan-bot-feed');
+    if (!list) return;
     const now = new Date();
     const time = now.toTimeString().split(' ')[0];
     const entry = document.createElement('div');
     entry.className = `scan-bot-entry ${type}`;
     entry.innerHTML = `<span class="bot-time">${time}</span><span>${escapeHTML(message)}</span>`;
-    box.appendChild(entry);
-    while (box.children.length > 80) box.removeChild(box.firstChild);
-    box.scrollTop = box.scrollHeight;
+    list.appendChild(entry);
+    while (list.children.length > 80) list.removeChild(list.firstChild);
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
 }
 
 function appendDiscoveryEvidence(discovery) {
