@@ -4,3 +4,16 @@ data/credentials.json
 *.log
 .env
 .env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+
+# NPM logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
