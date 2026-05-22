@@ -1,4 +1,4 @@
-﻿# BOLA-Shield AI — Plateforme d'Audit Intelligent des Failles BOLA/IDOR
+# BOLA-Shield AI — Plateforme d'Audit Intelligent des Failles BOLA/IDOR
 
 **BOLA-Shield AI** est une plateforme **entièrement modulaire** pour détecter et corriger les failles BOLA/IDOR (Broken Object-Level Authorization) dans des architectures API modernes, avec **support du WAF bypass** et **protections anti-bot avancées**.
 
@@ -6,6 +6,8 @@
 
 BOLA-Shield combine:
 - **Scanner multi-moteurs** : moteur HTTP natif rapide + fallback Puppeteer lourd pour contourner les WAF;
+- **Full Auto-Discovery Spider** : Fuzzing autonome d'UI et détection intelligente des API REST cachées (capture d'ID dynamique);
+- **Module d'Exfiltration & Sabotage** : Data mining automatique (Regex e-mails/téléphones), fuite de masse (ID+1) et simulation d'Attack Chaining (Write Access);
 - **Moteur d'évasion anti-bot** : IP spoofing, fausse entropie, gestion des honeypots, support OTP;
 - **Gateway instrumentée** : reverse proxy avec observation et modification contrôlée des requêtes/réponses;
 - **Tableau de bord en temps réel** : logs SSE, charts, fiches d'audit détaillées;
