@@ -1,0 +1,19 @@
+{
+  "https://www.glotelho.cm": {
+    "base": "https://www.glotelho.cm",
+    "authModel": "login-route-detected",
+    "routes": {
+      "register": "/api/v1/users/register",
+      "login": "/api/auth/login",
+      "target": "/api/v1/invoices/:id"
+    },
+    "endpoints": [
+      {
+        "path": "POST /api/auth/login",
+        "authRequired": false,
+        "resource": "Connexion (Spider)",
+        "risk": "Moyen"
+      }
+    ]
+  }
+}
