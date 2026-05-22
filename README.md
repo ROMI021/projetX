@@ -1,4 +1,4 @@
-﻿# BOLA-Shield AI
+# BOLA-Shield AI
 
 BOLA-Shield AI est une plateforme d'audit local et live pour détecter les failles BOLA/IDOR dans des architectures API modernes.
 
@@ -14,6 +14,10 @@ Elle combine :
 Ce dépôt est conçu pour qu'une autre personne puisse reprendre le développement sans se perdre :
 - la logique serveur principale est dans `server.js` et `lib/routes.js` ;
 - les helpers partagés sont dans `lib/utils.js` ;
+- l'exploration DAST intelligente (Pause OTP, Evénements de frappe) est dans `lib/spider.js` ;
+- le moteur de secours anti-WAF lourd (Heavy DAST) est dans `lib/browser-engine.js` ;
+- l'état d'application est stocké dans `lib/store.js` et `data/state.json` ;
+- la cible de test est dans `target-api/server.js`.
 - l'état d'application est stocké dans `lib/store.js` et `data/state.json` ;
 - la cible de test est dans `target-api/server.js`.
 
@@ -118,7 +122,9 @@ projet X/
 ├── lib/
 │   ├── routes.js
 │   ├── store.js
-│   └── utils.js
+│   ├── utils.js
+│   ├── spider.js
+│   └── browser-engine.js
 ├── data/
 │   ├── state.json
 │   └── credentials.example.json
@@ -131,7 +137,9 @@ projet X/
 
 - `server.js` : assemble le serveur principal, la gateway proxy et le handler API.
 - `lib/routes.js` : implémente les routes du scanner, firewall, patchs et chat.
-- `lib/utils.js` : regroupe les outils de découverte, d'appel distant, de parsing, de fingerprinting et de Puppeteer.
+- `lib/utils.js` : regroupe les outils de découverte, requêtes HTTP, de parsing et de fingerprinting.
+- `lib/spider.js` : navigateur fantôme pour la découverte (remplissage humain, pause OTP interactive).
+- `lib/browser-engine.js` : Moteur lourd ("Heavy DAST") instanciant des contextes Incognito séparés pour contourner les protections WAF et CSRF strictes.
 - `lib/store.js` : état central persistant et chargement/enregistrement sur disque.
 - `target-api/server.js` : API de test e-commerce durcie avec protections anti-robot et endpoint vulnérable contrôlé.
 
