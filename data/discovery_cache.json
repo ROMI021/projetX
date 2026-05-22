@@ -4,7 +4,7 @@
     "authModel": "login-route-detected",
     "routes": {
       "register": "/api/v1/users/register",
-      "login": "/login",
+      "login": "/api/auth/login",
       "target": "/api/v1/invoices/:id"
     },
     "endpoints": [
@@ -12,12 +12,6 @@
         "path": "POST /api/auth/login",
         "authRequired": false,
         "resource": "Connexion (Spider)",
-        "risk": "Moyen"
-      },
-      {
-        "path": "POST /login",
-        "authRequired": false,
-        "resource": "Connexion (Heavy Engine)",
         "risk": "Moyen"
       }
     ]
