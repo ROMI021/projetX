@@ -79,17 +79,42 @@ function buildFormHtml(action, fields = []) {
     return `<!doctype html><html><head><meta charset="utf-8"><title>Auth Form</title></head><body><h1>${action}</h1><form method="POST" action="${action}">${inputs}<button type="submit">Submit</button></form></body></html>`;
 }
 
-// Peuplement initial
+// ==========================================
+// PEUPLEMENT DE DONNÉES ET FAILLE BOLA
+// ==========================================
+let globalUserId = 1000;
+
 const seedData = () => {
-    const adminId = 'usr_admin_' + Date.now();
+    // 1. Admin
+    const adminId = (globalUserId++).toString();
     users.set(adminId, {
         id: adminId,
         email: 'admin@glotelho.cm',
         passwordHash: bcrypt.hashSync('SuperSecret123!', 10),
         role: 'admin',
-        sensitiveData: { creditCard: '****-****-****-1234', address: '123 Admin Ave, Yaoundé' }
+        sensitiveData: { creditCard: '****-****-****-1234', address: '123 Admin Ave, Yaoundé', phone: '+237 655 44 33 22' }
     });
     usersByEmail.set('admin@glotelho.cm', adminId);
+
+    // 2. Utilisateurs Cibles (Victimes Potentielles)
+    const victimes = [
+        { email: 'jean.dupont@gmail.com', phone: '+237 677 88 99 00', address: 'Bastos, Yaoundé' },
+        { email: 'marie.claire@yahoo.fr', phone: '+237 699 11 22 33', address: 'Akwa, Douala' },
+        { email: 'arthurngalamo@gmail.com', phone: '+237 650 00 11 22', address: 'Bonamoussadi, Douala' }, // User A
+        { email: 'nkarromi7@gmail.com', phone: '+237 690 99 88 77', address: 'Mvan, Yaoundé' } // User B
+    ];
+
+    for (const v of victimes) {
+        const id = (globalUserId++).toString();
+        users.set(id, {
+            id: id,
+            email: v.email,
+            passwordHash: bcrypt.hashSync('TestPassword123!', 10),
+            role: 'customer',
+            sensitiveData: { creditCard: `****-****-****-${Math.floor(Math.random() * 9000 + 1000)}`, address: v.address, phone: v.phone }
+        });
+        usersByEmail.set(v.email, id);
+    }
 };
 seedData();
 
@@ -219,7 +244,7 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
         return res.status(409).json({ status: 'error', code: 'ERR_EMAIL_EXISTS', message: 'Email already registered.' });
     }
 
-    const userId = 'usr_' + Buffer.from(normalizedEmail).toString('base64').substring(0, 15) + Math.floor(Math.random() * 1000);
+    const userId = (globalUserId++).toString();
     const passwordHash = await bcrypt.hash(password, 10);
     const user = {
         id: userId,
@@ -315,20 +340,40 @@ app.get('/api/users/:id', authenticateJWT, (req, res) => {
         return res.status(404).json({ status: 'error', code: 'ERR_NOT_FOUND', message: 'User profile not found' });
     }
 
-    if (req.user.id !== targetUserId && req.user.role !== 'admin') {
-        return res.status(404).json({ status: 'error', code: 'ERR_NOT_FOUND', message: 'User profile not found' });
-    }
+    // [BOLA VULNERABILITY INTENTIONALLY OPENED]
+    // if (req.user.id !== targetUserId && req.user.role !== 'admin') {
+    //     return res.status(404).json({ status: 'error', code: 'ERR_NOT_FOUND', message: 'User profile not found' });
+    // }
 
     const profile = {
         id: targetUser.id,
         email: targetUser.email,
         role: targetUser.role
     };
-    if (req.user.id === targetUserId || req.user.role === 'admin') {
-        profile.sensitiveData = targetUser.sensitiveData;
-    }
+    // Puisque BOLA est ouvert, tout le monde accède aux données sensibles
+    profile.sensitiveData = targetUser.sensitiveData;
 
     res.json({ status: 'success', data: profile });
+});
+
+// Endpoint de Sabotage (Faille BOLA en écriture)
+app.put('/api/users/:id', authenticateJWT, (req, res) => {
+    const targetUserId = req.params.id;
+    const targetUser = users.get(targetUserId);
+
+    if (!targetUser) {
+        return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    // [BOLA VULNERABILITY INTENTIONALLY OPENED - WRITE ACCESS]
+    // Aucune vérification d'autorisation ! N'importe qui peut modifier les données.
+    
+    if (req.body.bola_shield_poc) {
+        targetUser.sensitiveData.sabotage = req.body.bola_shield_poc;
+        targetUser.sensitiveData.poc_status = "Hacked by BOLA-Shield";
+    }
+
+    res.json({ status: 'success', message: 'User profile successfully sabotaged (BOLA Write-Access)', updatedData: targetUser });
 });
 
 // 404

@@ -490,5 +490,48 @@
         "method": "html-form"
       }
     }
+  },
+  "https://gene.co.uk": {
+    "base": "https://gene.co.uk",
+    "authModel": "no-public-auth-routes-detected",
+    "routes": {
+      "register": "/api/v1/users/register",
+      "login": "/api/v1/users/login",
+      "target": "/api/v1/invoices/:id"
+    },
+    "endpoints": []
+  },
+  "https://www.o2.co.uk": {
+    "base": "https://www.o2.co.uk",
+    "authModel": "no-public-auth-routes-detected",
+    "routes": {
+      "register": "/api/v1/users/register",
+      "login": "/api/v1/users/login",
+      "target": "/api/v1/invoices/:id"
+    },
+    "endpoints": []
+  },
+  "https://www.alibaba.com": {
+    "base": "https://www.alibaba.com",
+    "authModel": "auth-routes-detected",
+    "routes": {
+      "register": "/api/v1/users/register",
+      "login": "/api/v1/users/login",
+      "target": "/api/v1/invoices/:id"
+    },
+    "endpoints": [
+      {
+        "path": "POST /api/v1/users/register",
+        "authRequired": false,
+        "resource": "Inscription",
+        "risk": "Moyen"
+      },
+      {
+        "path": "POST /api/v1/users/login",
+        "authRequired": false,
+        "resource": "Connexion",
+        "risk": "Moyen"
+      }
+    ]
   }
 }
